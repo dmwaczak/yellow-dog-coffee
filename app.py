@@ -1,14 +1,21 @@
+import os
 from flask import Flask, render_template, request, jsonify
 import firebase_admin
 from firebase_admin import credentials, firestore
-import os
 import re  # Import regex for cleaning phone numbers
 
 # Initialize Flask app & explicitly set template folder
 app = Flask(__name__, template_folder="templates")
 
-# Use environment variable for Firebase credentials
+# Determine Firebase credentials path
 firebase_creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "firebase_credentials.json")
+
+# Check if credentials exist before initializing Firebase
+if not os.path.exists(firebase_creds_path):
+    print(f"⚠️ Firebase credentials not found at {firebase_creds_path}! Make sure it's uploaded in Render Secrets.")
+    exit(1)
+
+# Ensure Firebase is only initialized once
 if not firebase_admin._apps:
     cred = credentials.Certificate(firebase_creds_path)
     firebase_admin.initialize_app(cred)
