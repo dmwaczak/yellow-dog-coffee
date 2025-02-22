@@ -7,9 +7,10 @@ import re  # Import regex for cleaning phone numbers
 # Initialize Flask app & explicitly set template folder
 app = Flask(__name__, template_folder="templates")
 
-# Ensure Firebase is only initialized once
+# Use environment variable for Firebase credentials
+firebase_creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "firebase_credentials.json")
 if not firebase_admin._apps:
-    cred = credentials.Certificate(os.path.join(os.getcwd(), "firebase_credentials.json"))
+    cred = credentials.Certificate(firebase_creds_path)
     firebase_admin.initialize_app(cred)
 
 # Connect to Firestore
@@ -17,7 +18,6 @@ try:
     db = firestore.client()
 except Exception as e:
     print(f"Error connecting to Firestore: {e}")
-
 
 # Function to clean and standardize phone numbers
 def clean_phone_number(phone):
