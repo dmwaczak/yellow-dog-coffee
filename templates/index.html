@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yellow Dog Digital Punch Card</title>
+</head>
+<body>
+    <h2>Enter Your Phone Number</h2>
+    <form id="userForm">
+        <label for="phone">Phone Number:</label>
+        <input type="tel" id="phone" name="phone" required>
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        document.getElementById('userForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const phone = document.getElementById('phone').value;
+    
+            try {
+                const response = await fetch('/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: phone })  // Ensure it's sending as a JSON object
+                });
+    
+                const result = await response.json(); // Convert response to JSON
+    
+                if (response.ok) {
+                    alert(result.message);  // Display success message
+                } else {
+                    alert(result.error);  // Display error message if response is not ok
+                }
+            } catch (error) {
+                console.error("Error submitting phone number:", error);
+                alert("Something went wrong. Please try again.");
+            }
+        });
+    </script>    
+</body>
+</html>
