@@ -1,56 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yellow Dog Digital Punch Card</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Yellow Dog Digital Punch Card</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: #fdf9f2;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .form-container {
+      background-color: #ffffff;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    h2 {
+      color: #1a2c3a;
+      margin-bottom: 24px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      text-align: left;
+      font-weight: bold;
+      color: #1a2c3a;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #fcd34d;
+      color: #1a2c3a;
+      font-weight: bold;
+      border: none;
+      padding: 14px 24px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #fbbf24;
+    }
+  </style>
 </head>
 <body>
-    <h2>Sign Up for the Digital Punch Card</h2>
+  <div class="form-container">
+    <h2>Sign Up for Yellow Dog Rewards</h2>
     <form id="userForm">
-        <label for="first_name">First Name:</label>
-        <input type="text" id="first_name" name="first_name" required><br><br>
+      <label for="first_name">First Name:</label>
+      <input type="text" id="first_name" name="first_name" required />
 
-        <label for="last_name">Last Name:</label>
-        <input type="text" id="last_name" name="last_name" required><br><br>
+      <label for="last_name">Last Name:</label>
+      <input type="text" id="last_name" name="last_name" required />
 
-        <label for="phone">Phone Number:</label>
-        <input type="tel" id="phone" name="phone" required><br><br>
+      <label for="phone">Phone Number:</label>
+      <input type="tel" id="phone" name="phone" required />
 
-        <button type="submit">Submit</button>
+      <button type="submit">Join the Pack 🐶</button>
     </form>
+  </div>
 
-    <script>
-        document.getElementById('userForm').addEventListener('submit', async (event) => {
-            event.preventDefault();
+  <script>
+    document.getElementById('userForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
 
-            const firstName = document.getElementById('first_name').value;
-            const lastName = document.getElementById('last_name').value;
-            const phone = document.getElementById('phone').value;
+      const firstName = document.getElementById('first_name').value;
+      const lastName = document.getElementById('last_name').value;
+      const phone = document.getElementById('phone').value;
 
-            try {
-                const response = await fetch('/submit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        first_name: firstName,
-                        last_name: lastName,
-                        phone: phone
-                    })
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    alert(result.message);
-                } else {
-                    alert(result.error);
-                }
-            } catch (error) {
-                console.error("Error submitting form:", error);
-                alert("Something went wrong. Please try again.");
-            }
+      try {
+        const response = await fetch('/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            first_name: firstName,
+            last_name: lastName,
+            phone: phone
+          })
         });
-    </script>    
+
+        const result = await response.json();
+
+        if (response.ok) {
+          alert(result.message);
+        } else {
+          alert(result.error);
+        }
+      } catch (error) {
+        console.error("Error submitting form:", error);
+        alert("Something went wrong. Please try again.");
+      }
+    });
+  </script>
 </body>
 </html>
