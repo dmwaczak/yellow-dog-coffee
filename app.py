@@ -31,22 +31,6 @@ def clean_phone_number(phone):
         cleaned_phone = cleaned_phone[1:]
     return cleaned_phone if len(cleaned_phone) == 10 else None
 
-# Optional: disabled SMS sending for now
-# def send_welcome_sms(phone_number, first_name):
-#     try:
-#         account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-#         auth_token = os.getenv("TWILIO_AUTH_TOKEN")
-#         twilio_number = os.getenv("TWILIO_PHONE_NUMBER")
-#         client = Client(account_sid, auth_token)
-#         message = client.messages.create(
-#             body=f"Hey {first_name}! Thanks for signing up with Yellow Dog Coffee ☕🐶 You're now on the digital punch card!",
-#             from_=twilio_number,
-#             to=f"+1{phone_number}"
-#         )
-#         print(f"✅ SMS sent to {phone_number}: SID {message.sid}")
-#     except Exception as e:
-#         print(f"❌ Failed to send SMS: {e}")
-
 @app.route('/')
 def home():
     return render_template("index.html")
@@ -69,7 +53,7 @@ def submit():
 
         existing_users = db.collection("customers").where("phone", "==", cleaned_phone).get()
         if existing_users:
-            return jsonify({"message": f"Phone number {cleaned_phone} is already registered."}), 200
+            return jsonify({"redirect": f"/thankyou?name={first_name}"}), 200
 
         user_id = str(uuid.uuid4())
 
@@ -83,13 +67,15 @@ def submit():
             "punches": 0
         })
 
-        # send_welcome_sms(cleaned_phone, first_name)  # disabled for now
-
         return jsonify({"redirect": f"/thankyou?name={first_name}"}), 200
-
 
     except Exception as e:
         return jsonify({"error": f"Something went wrong: {e}"}), 500
+
+@app.route('/thankyou')
+def thankyou():
+    name = request.args.get("name", "there")
+    return render_template("thankyou.html", first_name=name)
 
 @app.route('/barista', methods=['GET', 'POST'])
 def barista():
@@ -116,7 +102,7 @@ def barista():
             doc_ref = docs[0].reference
             customer = docs[0].to_dict()
 
-            points_to_add = int(float(amount))  # 1 point per $1 spent
+            points_to_add = int(float(amount))
             current_points = customer.get("points", 0)
             new_total = current_points + points_to_add
 
@@ -145,6 +131,7 @@ def status():
         name = customer.get("first_name", "there")
 
         return render_template("status.html", name=name, punches=punches, points=points)
+
     return render_template("status_check.html")
 
 @app.route('/admin-add-punch', methods=['POST'])
