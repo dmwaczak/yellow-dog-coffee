@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Barista Point Logger</title>
+  <title>Barista Entry</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500&display=swap" rel="stylesheet">
   <style>
     body {
@@ -65,22 +65,24 @@
 </head>
 <body>
   <div class="form-container">
-    <h2>Log Customer Purchase</h2>
+    <h2>Log Purchase</h2>
     <input type="tel" id="phone" placeholder="Customer Phone Number" required />
+    <input type="number" id="coffees" placeholder="Number of Coffees" min="1" required />
     <input type="number" id="amount" placeholder="Amount Spent ($)" step="0.01" required />
-    <button onclick="logPoints()">Log Points</button>
+    <button onclick="logTransaction()">Submit</button>
 
     <div class="message" id="message"></div>
   </div>
 
   <script>
-    async function logPoints() {
+    async function logTransaction() {
       const phone = document.getElementById('phone').value;
+      const coffees = document.getElementById('coffees').value;
       const amount = document.getElementById('amount').value;
       const messageDiv = document.getElementById('message');
 
-      if (!phone || !amount) {
-        messageDiv.innerText = "Please enter both phone number and amount.";
+      if (!phone || !coffees || !amount) {
+        messageDiv.innerText = "Please fill in all fields.";
         return;
       }
 
@@ -88,16 +90,17 @@
         const response = await fetch('/barista', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, amount })
+          body: JSON.stringify({ phone, coffees, amount })
         });
 
         const result = await response.json();
         messageDiv.innerText = response.ok ? result.message : result.error;
       } catch (err) {
-        console.error("Error logging points:", err);
+        console.error("Error logging transaction:", err);
         messageDiv.innerText = "Something went wrong. Try again.";
       }
     }
   </script>
 </body>
 </html>
+

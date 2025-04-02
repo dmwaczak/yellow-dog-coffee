@@ -86,10 +86,11 @@ def barista():
         try:
             data = request.json
             phone = data.get("phone")
+            coffees = data.get("coffees")
             amount = data.get("amount")
 
-            if not phone or not amount:
-                return jsonify({"error": "Phone and amount are required."}), 400
+            if not phone or coffees is None or amount is None:
+                return jsonify({"error": "Phone, coffees, and amount are all required."}), 400
 
             cleaned_phone = clean_phone_number(phone)
             if not cleaned_phone:
@@ -103,12 +104,19 @@ def barista():
             customer = docs[0].to_dict()
 
             points_to_add = int(float(amount))
-            current_points = customer.get("points", 0)
-            new_total = current_points + points_to_add
+            punches_to_add = int(float(coffees))
 
-            doc_ref.update({"points": new_total})
+            new_points = customer.get("points", 0) + points_to_add
+            new_punches = customer.get("punches", 0) + punches_to_add
 
-            return jsonify({"message": f"{points_to_add} points added to {customer.get('first_name', 'Customer')}!"}), 200
+            doc_ref.update({
+                "points": new_points,
+                "punches": new_punches
+            })
+
+            return jsonify({
+                "message": f"{punches_to_add} punches & {points_to_add} points added for {customer.get('first_name', 'Customer')}."
+            }), 200
 
         except Exception as e:
             return jsonify({"error": f"Something went wrong: {e}"}), 500
