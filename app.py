@@ -85,7 +85,8 @@ def submit():
 
         # send_welcome_sms(cleaned_phone, first_name)  # disabled for now
 
-        return jsonify({"message": f"You're in, {first_name}! We'll contact you with rewards and updates soon 😄"}), 200
+        return jsonify({"redirect": f"/thankyou?name={first_name}"}), 200
+
 
     except Exception as e:
         return jsonify({"error": f"Something went wrong: {e}"}), 500

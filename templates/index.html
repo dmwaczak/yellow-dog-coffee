@@ -121,7 +121,12 @@
         });
 
         const result = await response.json();
-        alert(response.ok ? result.message : result.error);
+        if (response.ok && result.redirect) {
+  window.location.href = result.redirect;
+} else {
+  alert(result.error || "Something went wrong.");
+}
+
       } catch (err) {
         console.error("Error submitting form:", err);
         alert("Something went wrong. Please try again.");
