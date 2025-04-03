@@ -65,9 +65,10 @@
       background-color: #fbbf24;
     }
 
-    .check-status-link {
+    .check-status-link,
+    .go-home-link {
       display: inline-block;
-      margin-top: 20px;
+      margin-top: 12px;
       padding: 12px 20px;
       background-color: #fcd34d;
       color: #1a2c3a;
@@ -77,7 +78,8 @@
       transition: background-color 0.3s ease;
     }
 
-    .check-status-link:hover {
+    .check-status-link:hover,
+    .go-home-link:hover {
       background-color: #fbbf24;
     }
   </style>
@@ -102,6 +104,7 @@
     </form>
 
     <a href="/status" class="check-status-link">Check My Punches & Points</a>
+    <a href="/" class="go-home-link">Go Back Home</a>
   </div>
 
   <script>
@@ -122,10 +125,10 @@
 
         const result = await response.json();
         if (response.ok && result.redirect) {
-  window.location.href = result.redirect;
-} else {
-  alert(result.error || "Something went wrong.");
-}
+          window.location.href = result.redirect;
+        } else {
+          alert(result.error || "Something went wrong.");
+        }
 
       } catch (err) {
         console.error("Error submitting form:", err);
