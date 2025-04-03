@@ -3,3 +3,5 @@ flask
 firebase-admin
 gunicorn
 twilio 
+qrcode
+pillow
