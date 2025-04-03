@@ -52,7 +52,7 @@ def submit():
 
         existing_users = db.collection("customers").where("phone", "==", cleaned_phone).get()
         if existing_users:
-            return jsonify({"redirect": f"/thankyou?name={first_name}"}), 200
+            return jsonify({"error": "Whoops! Looks like this number is already being used. If this isn't you, please tell a staff member."}), 400
 
         db.collection("customers").add({
             "uuid": str(uuid.uuid4()),
