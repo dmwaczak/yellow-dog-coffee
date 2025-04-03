@@ -1,3 +1,5 @@
+{% include 'navbar.html' %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,33 +30,12 @@
     }
 
     h2 {
+      margin-bottom: 12px;
+    }
+
+    p {
+      font-size: 16px;
       margin-bottom: 20px;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      margin: 12px 0;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      font-size: 16px;
-    }
-
-    button {
-      background-color: #fcd34d;
-      color: #1a2c3a;
-      font-weight: bold;
-      border: none;
-      padding: 14px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background-color 0.3s ease;
-      width: 100%;
-    }
-
-    button:hover {
-      background-color: #fbbf24;
     }
 
     .btn-link {
@@ -72,15 +53,24 @@
     .btn-link:hover {
       background-color: #fbbf24;
     }
+
+    .qr-code {
+      margin: 20px 0;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Redeem Your Free Coffee</h2>
-    <form method="POST" action="/redeem">
-      <input type="tel" name="phone" placeholder="Enter your phone number" required />
-      <button type="submit">Claim Reward 🎉</button>
-    </form>
+    <h2>🎉 Your Free Coffee is Ready!</h2>
+    <p>Show this QR code to a Yellow Dog team member at the counter to redeem your reward.</p>
+
+    {% if qr_data %}
+      <div class="qr-code">
+        <img src="data:image/png;base64,{{ qr_data }}" alt="Yellow Dog QR Code" width="200" height="200" style="border-radius: 12px;" />
+      </div>
+    {% else %}
+      <p>Sorry, no QR code found. Please try again or speak to a barista.</p>
+    {% endif %}
 
     <a href="/status" class="btn-link">Back to Status</a>
     <a href="/" class="btn-link">Home</a>

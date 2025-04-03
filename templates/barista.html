@@ -57,6 +57,14 @@
     .hidden {
       display: none;
     }
+    .redeem-box {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 2px dashed #ccc;
+    }
+    .redeem-box h3 {
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -76,6 +84,12 @@
       <input type="number" id="coffees" placeholder="Number of Coffees" min="1">
       <input type="number" id="amount" placeholder="Amount Spent ($)" step="0.01">
       <button onclick="logPurchase()">Add Purchase</button>
+    </div>
+
+    <div class="redeem-box">
+      <h3>Redeem Free Coffee</h3>
+      <input type="tel" id="redeem-phone" placeholder="Phone from QR Code">
+      <button onclick="redeemCoffee()">Confirm Redemption</button>
     </div>
 
     <div class="info" id="message"></div>
@@ -137,6 +151,29 @@
       } catch (err) {
         console.error("Error:", err);
         msg.innerText = 'Something went wrong.';
+      }
+    }
+
+    async function redeemCoffee() {
+      const redeemPhone = document.getElementById('redeem-phone').value;
+      const msg = document.getElementById('message');
+
+      if (!redeemPhone) {
+        msg.innerText = 'Enter a phone number from the QR code.';
+        return;
+      }
+
+      try {
+        const response = await fetch('/redeem-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `phone=${encodeURIComponent(redeemPhone)}`
+        });
+
+        const result = await response.text();
+        msg.innerText = result;
+      } catch (err) {
+        msg.innerText = 'Redemption failed. Please try again.';
       }
     }
   </script>

@@ -1,27 +1,26 @@
 import os
 import uuid
 import re
+import base64
+from io import BytesIO
 from flask import Flask, render_template, request, jsonify, redirect, session
 import firebase_admin
 from firebase_admin import credentials, firestore
+import qrcode
 
 app = Flask(__name__, template_folder="templates")
 app.secret_key = os.getenv("SECRET_KEY", "defaultsecret")
 
-# Firebase credentials
 firebase_creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "firebase_credentials.json")
-
 if not os.path.exists(firebase_creds_path):
     print(f"⚠️ Firebase credentials not found at {firebase_creds_path}! Make sure it's uploaded in Render Secrets.")
     exit(1)
-
 if not firebase_admin._apps:
     cred = credentials.Certificate(firebase_creds_path)
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
-# Helper: Clean phone number
 def clean_phone_number(phone):
     cleaned = re.sub(r'\D', '', phone)
     return cleaned[1:] if len(cleaned) == 11 and cleaned.startswith('1') else cleaned if len(cleaned) == 10 else None
@@ -103,6 +102,19 @@ def rewards():
 def menu():
     return render_template("menu.html")
 
+@app.route('/redeem-qr/<phone>')
+def redeem_qr(phone):
+    cleaned_phone = clean_phone_number(phone)
+    if not cleaned_phone:
+        return "Invalid phone.", 400
+
+    qr_img = qrcode.make(cleaned_phone)
+    buffered = BytesIO()
+    qr_img.save(buffered, format="PNG")
+    qr_data = base64.b64encode(buffered.getvalue()).decode()
+
+    return render_template("redeem.html", qr_data=qr_data)
+
 @app.route('/barista-login', methods=['GET', 'POST'])
 def barista_login():
     if request.method == 'POST':
@@ -158,12 +170,12 @@ def barista():
         except Exception as e:
             return jsonify({"error": f"Something went wrong: {e}"}), 500
 
-@app.route('/redeem', methods=['POST'])
-def redeem():
+@app.route('/redeem-check', methods=['POST'])
+def redeem_check():
     phone = request.form.get("phone")
     cleaned_phone = clean_phone_number(phone)
     if not cleaned_phone:
-        return "Invalid phone number.", 400
+        return "Invalid phone.", 400
 
     docs = db.collection("customers").where("phone", "==", cleaned_phone).get()
     if not docs:
@@ -172,7 +184,7 @@ def redeem():
     doc_ref = docs[0].reference
     doc_ref.update({"punches": 0})
 
-    return "Punches reset after redemption. Free coffee claimed!"
+    return "✅ Coffee redeemed. Punches reset."
 
 @app.route('/admin-add-punch', methods=['POST'])
 def admin_add_punch():
