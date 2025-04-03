@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Thank You!</title>
+  <title>Redeem Your Reward</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500&display=swap" rel="stylesheet">
   <style>
     body {
@@ -17,62 +17,73 @@
       margin: 0;
     }
 
-    .thankyou-container {
+    .container {
       background-color: #ffffff;
       padding: 40px;
       border-radius: 16px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
       text-align: center;
-      max-width: 400px;
       width: 100%;
+      max-width: 400px;
     }
 
     h2 {
-      font-size: 24px;
       margin-bottom: 20px;
     }
 
-    p {
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      border: 1px solid #ccc;
+      border-radius: 10px;
       font-size: 16px;
-      margin-bottom: 12px;
     }
 
-    .emoji {
-      font-size: 40px;
-      margin-bottom: 16px;
-    }
-
-    .btn {
-      display: inline-block;
-      margin-top: 12px;
-      padding: 12px 20px;
+    button {
       background-color: #fcd34d;
       color: #1a2c3a;
-      text-decoration: none;
       font-weight: bold;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+      width: 100%;
+    }
+
+    button:hover {
+      background-color: #fbbf24;
+    }
+
+    .btn-link {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 16px;
+      background-color: #fcd34d;
+      color: #1a2c3a;
+      font-weight: bold;
+      text-decoration: none;
       border-radius: 10px;
       transition: background-color 0.3s ease;
     }
 
-    .btn:hover {
+    .btn-link:hover {
       background-color: #fbbf24;
     }
   </style>
 </head>
 <body>
-  <div class="thankyou-container">
-    <div class="emoji">🐶☕</div>
-    <h2>Thanks for signing up, {{ first_name }}!</h2>
-    <p>You should receive a confirmation text momentarily.</p>
-    <p>If not, just let a Yellow Dog team member know!</p>
+  <div class="container">
+    <h2>Redeem Your Free Coffee</h2>
+    <form method="POST" action="/redeem">
+      <input type="tel" name="phone" placeholder="Enter your phone number" required />
+      <button type="submit">Claim Reward 🎉</button>
+    </form>
 
-    <a class="btn" href="/status">Check My Punches & Points</a>
-    <a class="btn" href="/">Go Back Home</a>
-    <a class="btn" href="/barista">Staff/Barista Panel</a>
-
-    <p style="margin-top: 30px; font-size: 14px; color: #666;">
-      Already signed up? You can check your rewards status anytime using the button above.
-    </p>
+    <a href="/status" class="btn-link">Back to Status</a>
+    <a href="/" class="btn-link">Home</a>
   </div>
 </body>
 </html>

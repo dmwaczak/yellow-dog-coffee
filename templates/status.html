@@ -40,6 +40,22 @@
       font-size: 36px;
       margin-bottom: 16px;
     }
+
+    .btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 20px;
+      background-color: #fcd34d;
+      color: #1a2c3a;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn:hover {
+      background-color: #fbbf24;
+    }
   </style>
 </head>
 <body>
@@ -48,7 +64,13 @@
     <h2>Hey {{ name }}!</h2>
     <p>You have <strong>{{ punches }}</strong> punches.</p>
     <p>You have <strong>{{ points }}</strong> points.</p>
-    <p>{{ 12 - punches }} more punches until a free coffee!</p>
+
+    {% if punches >= 12 %}
+      <p>🎉 You’ve earned a free coffee!</p>
+      <a href="/redeem" class="btn">Redeem Now</a>
+    {% else %}
+      <p>{{ 12 - punches }} more punches until your next free coffee!</p>
+    {% endif %}
   </div>
 </body>
 </html>
