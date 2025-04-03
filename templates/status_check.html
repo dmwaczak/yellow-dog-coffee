@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Check Your Rewards</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check Your Points</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500&display=swap" rel="stylesheet">
   <style>
     body {
@@ -16,59 +16,63 @@
       height: 100vh;
       margin: 0;
     }
-
-    .form-container {
+    .container {
       background-color: #ffffff;
       padding: 40px;
       border-radius: 16px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       text-align: center;
-      width: 100%;
       max-width: 400px;
-    }
-
-    h2 {
-      margin-bottom: 24px;
-    }
-
-    label, input, button {
-      display: block;
       width: 100%;
     }
-
     input {
+      width: 100%;
       padding: 12px;
-      margin: 12px 0;
-      border: 1px solid #ccc;
+      margin-top: 12px;
       border-radius: 10px;
+      border: 1px solid #ccc;
       font-size: 16px;
     }
-
     button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 20px;
       background-color: #fcd34d;
       color: #1a2c3a;
       font-weight: bold;
       border: none;
-      padding: 14px;
       border-radius: 10px;
-      cursor: pointer;
       font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #fbbf24;
+    }
+    .btn-link {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 16px;
+      background-color: #fcd34d;
+      color: #1a2c3a;
+      font-weight: bold;
+      text-decoration: none;
+      border-radius: 10px;
       transition: background-color 0.3s ease;
     }
-
-    button:hover {
+    .btn-link:hover {
       background-color: #fbbf24;
     }
   </style>
 </head>
 <body>
-  <div class="form-container">
+  <div class="container">
     <h2>Check Your Punch Card</h2>
     <form method="POST" action="/status">
-      <label for="phone">Phone Number:</label>
-      <input type="tel" name="phone" id="phone" required />
+      <input type="tel" name="phone" placeholder="Enter your phone number" required>
       <button type="submit">Check Status</button>
     </form>
+    <a href="/" class="btn-link">Go Back Home</a>
   </div>
 </body>
 </html>
