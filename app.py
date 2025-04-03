@@ -1,11 +1,12 @@
 import os
 import uuid
 import re
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, session
 import firebase_admin
 from firebase_admin import credentials, firestore
 
 app = Flask(__name__, template_folder="templates")
+app.secret_key = os.getenv("SECRET_KEY", "defaultsecret")
 
 # Firebase credentials
 firebase_creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "firebase_credentials.json")
@@ -21,14 +22,17 @@ if not firebase_admin._apps:
 db = firestore.client()
 
 # Helper: Clean phone number
-
 def clean_phone_number(phone):
     cleaned = re.sub(r'\D', '', phone)
     return cleaned[1:] if len(cleaned) == 11 and cleaned.startswith('1') else cleaned if len(cleaned) == 10 else None
 
 @app.route('/')
-def home():
-    return render_template("index.html")
+def homepage():
+    return render_template("home.html")
+
+@app.route('/signup')
+def signup():
+    return render_template("signup.html")
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -46,7 +50,6 @@ def submit():
         if not cleaned_phone:
             return jsonify({"error": "Invalid phone number format."}), 400
 
-        # Check for existing user
         existing_users = db.collection("customers").where("phone", "==", cleaned_phone).get()
         if existing_users:
             return jsonify({"redirect": f"/thankyou?name={first_name}"}), 200
@@ -62,7 +65,7 @@ def submit():
         })
 
         return jsonify({"redirect": f"/thankyou?name={first_name}"}), 200
-    
+
     except Exception as e:
         return jsonify({"error": f"Something went wrong: {e}"}), 500
 
@@ -92,8 +95,30 @@ def status():
 
     return render_template("status_check.html")
 
+@app.route('/rewards')
+def rewards():
+    return render_template("rewards.html")
+
+@app.route('/menu')
+def menu():
+    return render_template("menu.html")
+
+@app.route('/barista-login', methods=['GET', 'POST'])
+def barista_login():
+    if request.method == 'POST':
+        password = request.form.get("password")
+        if password == "1111":
+            session['barista_authenticated'] = True
+            return redirect("/barista")
+        else:
+            return render_template("barista-login.html", error="Incorrect password")
+    return render_template("barista-login.html")
+
 @app.route('/barista', methods=['GET', 'POST'])
 def barista():
+    if not session.get('barista_authenticated'):
+        return redirect("/barista-login")
+
     if request.method == 'GET':
         return render_template("barista.html")
 
@@ -145,7 +170,7 @@ def redeem():
         return "Customer not found.", 404
 
     doc_ref = docs[0].reference
-    doc_ref.update({"punches": 0})  # Reset punches after redeem
+    doc_ref.update({"punches": 0})
 
     return "Punches reset after redemption. Free coffee claimed!"
 
