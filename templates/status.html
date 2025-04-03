@@ -56,6 +56,27 @@
     .btn:hover {
       background-color: #fbbf24;
     }
+
+    .punch-visual {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      margin: 20px 0 10px;
+      justify-items: center;
+    }
+
+    .circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background-color: #e5e7eb;
+      border: 2px solid #ccc;
+    }
+
+    .filled {
+      background-color: #fcd34d;
+      border-color: #fbbf24;
+    }
   </style>
 </head>
 <body>
@@ -64,6 +85,12 @@
     <h2>Hey {{ name }}!</h2>
     <p>You have <strong>{{ punches }}</strong> punches.</p>
     <p>You have <strong>{{ points }}</strong> points.</p>
+
+    <div class="punch-visual">
+      {% for i in range(1, 13) %}
+        <div class="circle {% if punches >= i %}filled{% endif %}"></div>
+      {% endfor %}
+    </div>
 
     {% if punches >= 12 %}
       <p>🎉 You’ve earned a free coffee!</p>
