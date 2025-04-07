@@ -32,7 +32,7 @@ EMAIL_USER = os.getenv("EMAIL_USER")
 EMAIL_PASS = os.getenv("EMAIL_PASS")
 
 def send_welcome_email(to_address, name):
-    subject = "Welcome to Yellow Dog Rewards 🐾"
+    subject = "Welcome to Yellow Dog Rewards \U0001f43e"
     body = f"""
     Hi {name},
 
@@ -42,7 +42,7 @@ def send_welcome_email(to_address, name):
     Next time you're in the shop, just let a barista know you're a rewards member.
     You can check your status anytime at: https://yellow-dog-coffee.onrender.com/
 
-    Stay pawsitive ☕🐾,
+    Stay pawsitive \u2615\U0001f43e,
     Yellow Dog Coffee
     """
     msg = MIMEText(body)
@@ -54,9 +54,9 @@ def send_welcome_email(to_address, name):
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(EMAIL_USER, EMAIL_PASS)
             smtp.send_message(msg)
-            print(f"✅ Sent welcome email to {to_address}")
+            print(f"\u2705 Sent welcome email to {to_address}")
     except Exception as e:
-        print(f"❌ Failed to send email: {e}")
+        print(f"\u274c Failed to send email: {e}")
 
 def clean_phone_number(phone):
     cleaned = re.sub(r'\D', '', phone)
@@ -136,8 +136,22 @@ def status():
 
     return render_template("status_check.html")
 
-@app.route('/barista', methods=['POST'])
+@app.route('/menu')
+def menu():
+    return render_template("menu.html")
+
+@app.route('/rewards')
+def rewards():
+    return render_template("rewards.html")
+
+@app.route('/barista', methods=['GET', 'POST'])
 def barista():
+    if not session.get('barista_authenticated'):
+        return redirect("/barista-login")
+
+    if request.method == 'GET':
+        return render_template("barista.html")
+
     try:
         data = request.json
         phone = data.get("phone")
@@ -182,7 +196,7 @@ def redeem_check():
     doc_ref = docs[0].reference
     doc_ref.update({"punches": 0})
 
-    return "✅ Coffee redeemed. Punches reset."
+    return "\u2705 Coffee redeemed. Punches reset."
 
 @app.route('/redeem-points', methods=['POST'])
 def redeem_points():
@@ -206,7 +220,7 @@ def redeem_points():
 
     doc_ref.update({"points": current_points - points})
 
-    return f"✅ Redeemed {points} points."
+    return f"\u2705 Redeemed {points} points."
 
 @app.route('/barista-login', methods=['GET', 'POST'])
 def barista_login():
