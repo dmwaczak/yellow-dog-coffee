@@ -1,3 +1,4 @@
+
 {% include 'navbar.html' %}
 
 <!DOCTYPE html>
@@ -57,19 +58,35 @@
     .qr-code {
       margin: 20px 0;
     }
+
+    .redeem-code-box {
+      font-size: 22px;
+      font-weight: bold;
+      background-color: #fef08a;
+      padding: 10px;
+      border-radius: 10px;
+      margin: 10px auto;
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>🎉 Your Free Coffee is Ready!</h2>
-    <p>Show this QR code to a Yellow Dog team member at the counter to redeem your reward.</p>
+    <p>Show this QR code or give the code below to a Yellow Dog team member to redeem your reward.</p>
 
     {% if qr_data %}
       <div class="qr-code">
         <img src="data:image/png;base64,{{ qr_data }}" alt="Yellow Dog QR Code" width="200" height="200" style="border-radius: 12px;" />
       </div>
+    {% endif %}
+
+    {% if redeem_code %}
+      <div class="redeem-code-box">
+        Code: {{ redeem_code }}
+      </div>
     {% else %}
-      <p>Sorry, no QR code found. Please try again or speak to a barista.</p>
+      <p>Sorry, something went wrong. Please try again or speak to a barista.</p>
     {% endif %}
 
     <a href="/status" class="btn-link">Back to Status</a>

@@ -1,7 +1,10 @@
+
 import os
 import uuid
 import re
 import base64
+import random
+import string
 from io import BytesIO
 from flask import Flask, render_template, request, jsonify, redirect, session
 import firebase_admin
@@ -13,7 +16,7 @@ app.secret_key = os.getenv("SECRET_KEY", "defaultsecret")
 
 firebase_creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "firebase_credentials.json")
 if not os.path.exists(firebase_creds_path):
-    print(f"⚠️ Firebase credentials not found at {firebase_creds_path}! Make sure it's uploaded in Render Secrets.")
+    print(f"⚠️ Firebase credentials not found at {firebase_creds_path}!")
     exit(1)
 if not firebase_admin._apps:
     cred = credentials.Certificate(firebase_creds_path)
@@ -24,6 +27,9 @@ db = firestore.client()
 def clean_phone_number(phone):
     cleaned = re.sub(r'\D', '', phone)
     return cleaned[1:] if len(cleaned) == 11 and cleaned.startswith('1') else cleaned if len(cleaned) == 10 else None
+
+def generate_redeem_code(length=6):
+    return ''.join(random.choices(string.digits, k=length))
 
 @app.route('/')
 def homepage():
@@ -42,8 +48,8 @@ def submit():
         email = data.get("email")
         phone = data.get("phone")
 
-        if not first_name or not last_name or not email or not phone:
-            return jsonify({"error": "All fields (first name, last name, email, phone) are required."}), 400
+        if not all([first_name, last_name, email, phone]):
+            return jsonify({"error": "All fields are required."}), 400
 
         cleaned_phone = clean_phone_number(phone)
         if not cleaned_phone:
@@ -51,7 +57,7 @@ def submit():
 
         existing_users = db.collection("customers").where("phone", "==", cleaned_phone).get()
         if existing_users:
-            return jsonify({"error": "Whoops! Looks like this number is already being used. If this isn't you, please tell a staff member."}), 400
+            return jsonify({"error": "Whoops! Looks like this number is already in use."}), 400
 
         db.collection("customers").add({
             "uuid": str(uuid.uuid4()),
@@ -108,67 +114,40 @@ def redeem_qr(phone):
     if not cleaned_phone:
         return "Invalid phone.", 400
 
+    docs = db.collection("customers").where("phone", "==", cleaned_phone).get()
+    if not docs:
+        return "Customer not found.", 404
+
+    doc_ref = docs[0].reference
+    customer = docs[0].to_dict()
+
+    if customer.get("punches", 0) < 12:
+        return redirect("/status")
+
+    redeem_code = generate_redeem_code()
+    doc_ref.update({"redeem_code": redeem_code})
+
     qr_img = qrcode.make(cleaned_phone)
     buffered = BytesIO()
     qr_img.save(buffered, format="PNG")
     qr_data = base64.b64encode(buffered.getvalue()).decode()
 
-    return render_template("redeem.html", qr_data=qr_data)
+    return render_template("redeem.html", qr_data=qr_data, redeem_code=redeem_code)
 
-@app.route('/barista-login', methods=['GET', 'POST'])
-def barista_login():
-    if request.method == 'POST':
-        password = request.form.get("password")
-        if password == "1111":
-            session['barista_authenticated'] = True
-            return redirect("/barista")
-        else:
-            return render_template("barista-login.html", error="Incorrect password")
-    return render_template("barista-login.html")
+@app.route('/redeem-code-check', methods=['POST'])
+def redeem_code_check():
+    code = request.form.get("code")
+    if not code:
+        return "No code entered.", 400
 
-@app.route('/barista', methods=['GET', 'POST'])
-def barista():
-    if not session.get('barista_authenticated'):
-        return redirect("/barista-login")
+    docs = db.collection("customers").where("redeem_code", "==", code).get()
+    if not docs:
+        return "Invalid or expired code.", 404
 
-    if request.method == 'GET':
-        return render_template("barista.html")
+    doc_ref = docs[0].reference
+    doc_ref.update({"punches": 0, "redeem_code": firestore.DELETE_FIELD})
 
-    if request.method == 'POST':
-        try:
-            data = request.json
-            phone = data.get("phone")
-            coffees = data.get("coffees")
-            amount = data.get("amount")
-
-            if not phone or coffees is None or amount is None:
-                return jsonify({"error": "Phone, coffees, and amount are required."}), 400
-
-            cleaned_phone = clean_phone_number(phone)
-            if not cleaned_phone:
-                return jsonify({"error": "Invalid phone number format."}), 400
-
-            docs = db.collection("customers").where("phone", "==", cleaned_phone).get()
-            if not docs:
-                return jsonify({"error": "Customer not found."}), 404
-
-            doc_ref = docs[0].reference
-            customer = docs[0].to_dict()
-
-            new_points = customer.get("points", 0) + int(float(amount))
-            new_punches = customer.get("punches", 0) + int(float(coffees))
-
-            doc_ref.update({
-                "points": new_points,
-                "punches": new_punches
-            })
-
-            return jsonify({
-                "message": f"{coffees} punches & {amount} points added for {customer.get('first_name', 'Customer')}"
-            }), 200
-
-        except Exception as e:
-            return jsonify({"error": f"Something went wrong: {e}"}), 500
+    return "✅ Code accepted. Coffee redeemed. Punches reset."
 
 @app.route('/redeem-check', methods=['POST'])
 def redeem_check():
@@ -204,6 +183,54 @@ def admin_add_punch():
     doc.reference.update({"punches": current_punches + 1})
 
     return f"Punch added. Now has {current_punches + 1} punches."
+
+@app.route('/barista-login', methods=['GET', 'POST'])
+def barista_login():
+    if request.method == 'POST':
+        password = request.form.get("password")
+        if password == "1111":
+            session['barista_authenticated'] = True
+            return redirect("/barista")
+        return render_template("barista-login.html", error="Incorrect password")
+    return render_template("barista-login.html")
+
+@app.route('/barista', methods=['GET', 'POST'])
+def barista():
+    if not session.get('barista_authenticated'):
+        return redirect("/barista-login")
+
+    if request.method == 'GET':
+        return render_template("barista.html")
+
+    try:
+        data = request.json
+        phone = data.get("phone")
+        coffees = data.get("coffees")
+        amount = data.get("amount")
+
+        if not phone or coffees is None or amount is None:
+            return jsonify({"error": "Phone, coffees, and amount are required."}), 400
+
+        cleaned_phone = clean_phone_number(phone)
+        if not cleaned_phone:
+            return jsonify({"error": "Invalid phone number format."}), 400
+
+        docs = db.collection("customers").where("phone", "==", cleaned_phone).get()
+        if not docs:
+            return jsonify({"error": "Customer not found."}), 404
+
+        doc_ref = docs[0].reference
+        customer = docs[0].to_dict()
+
+        new_points = customer.get("points", 0) + int(float(amount))
+        new_punches = customer.get("punches", 0) + int(float(coffees))
+
+        doc_ref.update({"points": new_points, "punches": new_punches})
+
+        return jsonify({"message": f"{coffees} punches & {amount} points added for {customer.get('first_name', 'Customer')}"}), 200
+
+    except Exception as e:
+        return jsonify({"error": f"Something went wrong: {e}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

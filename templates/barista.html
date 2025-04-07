@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -89,7 +90,12 @@
     <div class="redeem-box">
       <h3>Redeem Free Coffee</h3>
       <input type="tel" id="redeem-phone" placeholder="Phone from QR Code">
-      <button onclick="redeemCoffee()">Confirm Redemption</button>
+      <button onclick="redeemCoffee()">Redeem by Phone</button>
+
+      <p style="margin-top: 20px; font-weight: bold;">OR</p>
+
+      <input type="text" id="redeem-code" placeholder="6-digit Redeem Code">
+      <button onclick="redeemByCode()">Redeem by Code</button>
     </div>
 
     <div class="info" id="message"></div>
@@ -149,7 +155,6 @@
         const result = await response.json();
         msg.innerText = response.ok ? result.message : result.error;
       } catch (err) {
-        console.error("Error:", err);
         msg.innerText = 'Something went wrong.';
       }
     }
@@ -176,6 +181,30 @@
         msg.innerText = 'Redemption failed. Please try again.';
       }
     }
+
+    async function redeemByCode() {
+      const code = document.getElementById('redeem-code').value;
+      const msg = document.getElementById('message');
+
+      if (!code) {
+        msg.innerText = 'Enter a 6-digit code.';
+        return;
+      }
+
+      try {
+        const response = await fetch('/redeem-code-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `code=${encodeURIComponent(code)}`
+        });
+
+        const result = await response.text();
+        msg.innerText = result;
+      } catch (err) {
+        msg.innerText = 'Redemption failed. Try again.';
+      }
+    }
   </script>
 </body>
 </html>
+```
