@@ -1,3 +1,4 @@
+<!-- Upgraded barista.html for Yellow Dog Coffee -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,7 +19,6 @@
       justify-content: center;
       min-height: 100vh;
     }
-
     .panel {
       display: flex;
       flex-direction: row;
@@ -32,16 +32,13 @@
       border-radius: 16px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
-
     .form-section, .info-section {
       flex: 1;
     }
-
     h2 {
       margin-bottom: 20px;
     }
-
-    input {
+    input, button, select {
       width: 100%;
       padding: 12px;
       margin: 10px 0;
@@ -49,75 +46,43 @@
       border: 1px solid #ccc;
       font-size: 16px;
     }
-
     button {
       background-color: #fcd34d;
       color: #1a2c3a;
       font-weight: bold;
       border: none;
-      padding: 14px;
-      border-radius: 10px;
       cursor: pointer;
-      font-size: 16px;
-      margin-top: 10px;
-      width: 100%;
     }
-
     button:hover {
       background-color: #fbbf24;
     }
-
     .info-box {
       padding: 20px;
       border: 2px dashed #ccc;
       border-radius: 12px;
       background-color: #fefce8;
     }
-
     .info-box p {
       font-size: 18px;
       margin: 10px 0;
     }
-
     .hidden {
       display: none;
     }
-
     .message {
       margin-top: 20px;
       font-size: 16px;
       text-align: center;
     }
-
-    .rewards-list {
-      margin-top: 10px;
-      text-align: left;
-    }
-
-    .reward-item {
-      background-color: #fff8dc;
-      border: 1px solid #fcd34d;
-      padding: 10px 15px;
-      border-radius: 10px;
-      margin-bottom: 10px;
-    }
-
-    .reward-item span {
-      display: block;
-      margin-bottom: 5px;
-    }
-
     .reward-item button {
       background-color: #86efac;
       width: auto;
       padding: 6px 12px;
       font-size: 14px;
     }
-
     .reward-item button:hover {
       background-color: #4ade80;
     }
-
     .checkout-summary {
       margin-top: 20px;
       background-color: #e0f2fe;
@@ -128,21 +93,20 @@
   </style>
 </head>
 <body>
-  <h2>Barista Panel</h2>
+  <h2>Barista Dashboard</h2>
   <div class="panel">
     <div class="form-section">
       <input type="tel" id="phone" placeholder="Customer Phone Number" required>
       <button onclick="lookupCustomer()">Look Up Customer</button>
-
       <input type="number" id="coffees" placeholder="Number of Coffees" min="1">
       <input type="number" id="amount" placeholder="Amount Spent ($)" step="0.01">
-      <button onclick="logPurchase()">Add Purchase</button>
-      <button onclick="resetPanel()">Reset for Next Customer</button>
-
-      <div class="checkout-summary" id="checkout-summary">
-        <strong>🧾 Current Order Summary:</strong>
+      <button onclick="addToSummary()">Add to Order</button>
+      <div class="checkout-summary">
+        <strong>🧾 Order Summary:</strong>
         <ul id="summary-list"></ul>
+        <button onclick="payOrder()">Pay Order</button>
       </div>
+      <button onclick="resetPanel()">Reset for Next Customer</button>
     </div>
 
     <div class="info-section">
@@ -151,7 +115,7 @@
         <p><strong>Punches:</strong> <span id="cust-punches"></span></p>
         <p><strong>Points:</strong> <span id="cust-points"></span></p>
         <div id="free-coffee-box"></div>
-        <div id="rewards-section" class="rewards-list"></div>
+        <div id="rewards-section"></div>
       </div>
     </div>
   </div>
@@ -160,176 +124,138 @@
 
   <script>
     let currentPhone = '';
-    let summaryItems = [];
-
-    const rewards = [
-      { name: "🥪 Free Toast", points: 100 },
-      { name: "🧊 Cold Brew", points: 250 },
-      { name: "☕ Yellow Dog Mug", points: 500 }
-    ];
-
-    function updateSummaryDisplay() {
-      const list = document.getElementById('summary-list');
-      list.innerHTML = '';
-      summaryItems.forEach(item => {
-        const li = document.createElement('li');
-        li.innerText = item;
-        list.appendChild(li);
-      });
-    }
+    let currentName = '';
+    let customerData = {};
+    let order = { coffees: 0, amount: 0, summary: [] };
 
     async function lookupCustomer() {
       const phone = document.getElementById('phone').value;
       const msg = document.getElementById('message');
-      const infoBox = document.getElementById('customer-info');
-      currentPhone = phone;
-
-      msg.innerText = '';
-      infoBox.classList.add('hidden');
+      msg.innerText = 'Looking up customer...';
 
       try {
-        const res = await fetch(`/status`, {
+        const res = await fetch('/status', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: `phone=${encodeURIComponent(phone)}`
         });
-
         const html = await res.text();
-        const punchesMatch = html.match(/You have <strong>(\d+)<\/strong> punches/);
-        const pointsMatch = html.match(/You have <strong>(\d+)<\/strong> points/);
-        const nameMatch = html.match(/Hey (.*?)!/);
+        const punches = html.match(/You have <strong>(\d+)<\/strong> punches/);
+        const points = html.match(/You have <strong>(\d+)<\/strong> points/);
+        const name = html.match(/Hey (.*?)!/);
 
-        if (res.ok && punchesMatch && pointsMatch && nameMatch) {
-          const punches = parseInt(punchesMatch[1]);
-          const points = parseInt(pointsMatch[1]);
+        if (punches && points && name) {
+          currentPhone = phone;
+          customerData = {
+            name: name[1],
+            punches: parseInt(punches[1]),
+            points: parseInt(points[1])
+          };
+          document.getElementById('cust-name').innerText = customerData.name;
+          document.getElementById('cust-punches').innerText = customerData.punches;
+          document.getElementById('cust-points').innerText = customerData.points;
 
-          document.getElementById('cust-name').innerText = nameMatch[1];
-          document.getElementById('cust-punches').innerText = punches;
-          document.getElementById('cust-points').innerText = points;
+          document.getElementById('free-coffee-box').innerHTML =
+            customerData.punches >= 12 ?
+            `<p style="color:green;">🎉 Eligible for free coffee!</p>` :
+            `<p>${12 - customerData.punches} more until a free coffee</p>`;
 
-          if (punches >= 12) {
-            document.getElementById('free-coffee-box').innerHTML = `
-              <p style="color: green; font-weight: bold;">🎉 Eligible for free coffee!</p>
-              <button onclick="redeemFreeCoffee('${phone}')">Redeem Free Coffee</button>
-            `;
-          } else {
-            document.getElementById('free-coffee-box').innerHTML = `
-              <p>${12 - punches} more punches until next free coffee.</p>
-            `;
-          }
+          const rewardsDiv = document.getElementById('rewards-section');
+          rewardsDiv.innerHTML = '<h4>🎁 Rewards:</h4>';
+          const rewards = [
+            { name: '🥪 Toast', cost: 100 },
+            { name: '🧊 Cold Brew', cost: 250 },
+            { name: '☕ Mug', cost: 500 }
+          ];
+          rewards.forEach(reward => {
+            rewardsDiv.innerHTML += customerData.points >= reward.cost ?
+              `<div class='reward-item'><span>${reward.name} - ${reward.cost} pts</span>
+              <button onclick="redeemPoints(${reward.cost}, '${reward.name}')">Redeem</button></div>` :
+              `<div class='reward-item'><span>${reward.name} - Need ${reward.cost - customerData.points} more pts</span></div>`;
+          });
 
-          updateRewardSection(points);
-          infoBox.classList.remove('hidden');
+          document.getElementById('customer-info').classList.remove('hidden');
+          msg.innerText = '';
         } else {
-          msg.innerText = 'Customer not found or error parsing data.';
+          msg.innerText = 'Customer not found.';
         }
-      } catch (err) {
-        msg.innerText = 'Error fetching customer data.';
+      } catch (e) {
+        msg.innerText = 'Error looking up customer.';
       }
     }
 
-    function updateRewardSection(points) {
-      const section = document.getElementById('rewards-section');
-      section.innerHTML = '<strong>🎁 Point-Based Rewards:</strong>';
+    function addToSummary() {
+      const coffees = parseInt(document.getElementById('coffees').value) || 0;
+      const amount = parseFloat(document.getElementById('amount').value) || 0;
 
-      rewards.forEach(reward => {
-        if (points >= reward.points) {
-          section.innerHTML += `
-            <div class="reward-item">
-              <span>${reward.name} (Requires ${reward.points} points)</span>
-              <button onclick="redeemPoints(${reward.points}, '${reward.name}')">Redeem</button>
-            </div>
-          `;
-        } else {
-          const remaining = reward.points - points;
-          section.innerHTML += `
-            <div class="reward-item">
-              <span>${reward.name} (Need ${remaining} more points)</span>
-            </div>
-          `;
-        }
+      if (coffees > 0) order.summary.push(`☕ ${coffees} coffee(s)`);
+      if (amount > 0) order.summary.push(`💰 $${amount.toFixed(2)}`);
+
+      order.coffees += coffees;
+      order.amount += amount;
+
+      const summaryList = document.getElementById('summary-list');
+      summaryList.innerHTML = '';
+      order.summary.forEach(item => {
+        const li = document.createElement('li');
+        li.innerText = item;
+        summaryList.appendChild(li);
       });
     }
 
-    async function redeemPoints(pointsToDeduct, rewardName) {
+    async function payOrder() {
+      const msg = document.getElementById('message');
+      if (!currentPhone || (order.coffees === 0 && order.amount === 0)) {
+        msg.innerText = 'Missing customer or order details';
+        return;
+      }
+
+      try {
+        const res = await fetch('/barista', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: currentPhone, coffees: order.coffees, amount: order.amount })
+        });
+        const result = await res.json();
+        msg.innerText = res.ok ? result.message : result.error;
+        lookupCustomer();
+        order = { coffees: 0, amount: 0, summary: [] };
+        document.getElementById('summary-list').innerHTML = '';
+      } catch (e) {
+        msg.innerText = 'Transaction failed';
+      }
+    }
+
+    async function redeemPoints(points, name) {
       const msg = document.getElementById('message');
       try {
         const res = await fetch('/redeem-points', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `phone=${encodeURIComponent(currentPhone)}&points=${pointsToDeduct}`
+          body: `phone=${currentPhone}&points=${points}`
         });
-
         const result = await res.text();
         msg.innerText = result;
-        summaryItems.push(`Redeemed: ${rewardName}`);
-        updateSummaryDisplay();
-        await lookupCustomer();
-      } catch (err) {
-        msg.innerText = 'Could not redeem points.';
-      }
-    }
-
-    async function logPurchase() {
-      const phone = document.getElementById('phone').value;
-      const coffees = document.getElementById('coffees').value;
-      const amount = document.getElementById('amount').value;
-      const msg = document.getElementById('message');
-
-      if (!phone || !coffees || !amount) {
-        msg.innerText = 'Please fill in all fields.';
-        return;
-      }
-
-      try {
-        const response = await fetch('/barista', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, coffees, amount })
-        });
-
-        const result = await response.json();
-        msg.innerText = response.ok ? result.message : result.error;
-        summaryItems.push(`+${coffees} Coffee(s), $${amount}`);
-        updateSummaryDisplay();
-        await lookupCustomer();
-      } catch (err) {
-        msg.innerText = 'Something went wrong.';
-      }
-    }
-
-    async function redeemFreeCoffee(phone) {
-      const msg = document.getElementById('message');
-      try {
-        const response = await fetch('/redeem-check', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `phone=${encodeURIComponent(phone)}`
-        });
-
-        const result = await response.text();
-        msg.innerText = result;
-        summaryItems.push('Redeemed: Free Coffee');
-        updateSummaryDisplay();
-        lookupCustomer();
-      } catch (err) {
-        msg.innerText = 'Redemption failed. Please try again.';
+        order.summary.push(`🎁 ${name}`);
+        payOrder();
+      } catch (e) {
+        msg.innerText = 'Failed to redeem reward';
       }
     }
 
     function resetPanel() {
+      currentPhone = '';
+      customerData = {};
+      order = { coffees: 0, amount: 0, summary: [] };
       document.getElementById('phone').value = '';
-      document.getElementById('coffees').value = '';
-      document.getElementById('amount').value = '';
       document.getElementById('cust-name').innerText = '';
       document.getElementById('cust-punches').innerText = '';
       document.getElementById('cust-points').innerText = '';
       document.getElementById('free-coffee-box').innerHTML = '';
       document.getElementById('rewards-section').innerHTML = '';
       document.getElementById('customer-info').classList.add('hidden');
+      document.getElementById('summary-list').innerHTML = '';
       document.getElementById('message').innerText = '';
-      summaryItems = [];
-      updateSummaryDisplay();
     }
   </script>
 </body>
