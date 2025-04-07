@@ -26,7 +26,7 @@
       align-items: flex-start;
       justify-content: center;
       width: 90%;
-      max-width: 1000px;
+      max-width: 1100px;
       padding: 40px;
       background-color: #fff;
       border-radius: 16px;
@@ -88,6 +88,35 @@
       font-size: 16px;
       text-align: center;
     }
+
+    .rewards-list {
+      margin-top: 10px;
+      text-align: left;
+    }
+
+    .reward-item {
+      background-color: #fff8dc;
+      border: 1px solid #fcd34d;
+      padding: 10px 15px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .reward-item span {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .reward-item button {
+      background-color: #86efac;
+      width: auto;
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+
+    .reward-item button:hover {
+      background-color: #4ade80;
+    }
   </style>
 </head>
 <body>
@@ -109,6 +138,7 @@
         <p><strong>Punches:</strong> <span id="cust-punches"></span></p>
         <p><strong>Points:</strong> <span id="cust-points"></span></p>
         <div id="free-coffee-box"></div>
+        <div id="rewards-section" class="rewards-list"></div>
       </div>
     </div>
   </div>
@@ -116,10 +146,19 @@
   <div class="message" id="message"></div>
 
   <script>
+    let currentPhone = '';
+
+    const rewards = [
+      { name: "🥪 Free Toast", points: 100 },
+      { name: "🧊 Cold Brew", points: 250 },
+      { name: "☕ Yellow Dog Mug", points: 500 }
+    ];
+
     async function lookupCustomer() {
       const phone = document.getElementById('phone').value;
       const msg = document.getElementById('message');
       const infoBox = document.getElementById('customer-info');
+      currentPhone = phone;
 
       msg.innerText = '';
       infoBox.classList.add('hidden');
@@ -155,12 +194,53 @@
             `;
           }
 
+          updateRewardSection(points);
           infoBox.classList.remove('hidden');
         } else {
           msg.innerText = 'Customer not found or error parsing data.';
         }
       } catch (err) {
         msg.innerText = 'Error fetching customer data.';
+      }
+    }
+
+    function updateRewardSection(points) {
+      const section = document.getElementById('rewards-section');
+      section.innerHTML = '<strong>🎁 Point-Based Rewards:</strong>';
+
+      rewards.forEach(reward => {
+        if (points >= reward.points) {
+          section.innerHTML += `
+            <div class="reward-item">
+              <span>${reward.name} (Requires ${reward.points} points)</span>
+              <button onclick="redeemPoints(${reward.points})">Redeem</button>
+            </div>
+          `;
+        } else {
+          const remaining = reward.points - points;
+          section.innerHTML += `
+            <div class="reward-item">
+              <span>${reward.name} (Need ${remaining} more points)</span>
+            </div>
+          `;
+        }
+      });
+    }
+
+    async function redeemPoints(pointsToDeduct) {
+      const msg = document.getElementById('message');
+      try {
+        const res = await fetch('/redeem-points', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `phone=${encodeURIComponent(currentPhone)}&points=${pointsToDeduct}`
+        });
+
+        const result = await res.text();
+        msg.innerText = result;
+        await lookupCustomer();
+      } catch (err) {
+        msg.innerText = 'Could not redeem points.';
       }
     }
 
@@ -184,7 +264,7 @@
 
         const result = await response.json();
         msg.innerText = response.ok ? result.message : result.error;
-        await lookupCustomer(); // Auto-refresh the info panel
+        await lookupCustomer();
       } catch (err) {
         msg.innerText = 'Something went wrong.';
       }
@@ -201,7 +281,7 @@
 
         const result = await response.text();
         msg.innerText = result;
-        lookupCustomer(); // Refresh customer info
+        lookupCustomer();
       } catch (err) {
         msg.innerText = 'Redemption failed. Please try again.';
       }
@@ -215,6 +295,7 @@
       document.getElementById('cust-punches').innerText = '';
       document.getElementById('cust-points').innerText = '';
       document.getElementById('free-coffee-box').innerHTML = '';
+      document.getElementById('rewards-section').innerHTML = '';
       document.getElementById('customer-info').classList.add('hidden');
       document.getElementById('message').innerText = '';
     }

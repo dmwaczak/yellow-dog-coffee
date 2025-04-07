@@ -40,7 +40,7 @@ def send_welcome_email(to_address, name):
     You're now earning punches and points with every visit.
 
     Next time you're in the shop, just let a barista know you're a rewards member.
-    You can check your status anytime at: https://yourwebsite.com/status-check
+    You can check your status anytime at: https://yellow-dog-coffee.onrender.com/
 
     Stay pawsitive ☕🐾,
     Yellow Dog Coffee
@@ -201,6 +201,30 @@ def redeem_check():
 
     return "✅ Coffee redeemed. Punches reset."
 
+@app.route('/redeem-points', methods=['POST'])
+def redeem_points():
+    phone = request.form.get("phone")
+    points = int(request.form.get("points", 0))
+
+    cleaned_phone = clean_phone_number(phone)
+    if not cleaned_phone:
+        return "Invalid phone number.", 400
+
+    docs = db.collection("customers").where("phone", "==", cleaned_phone).get()
+    if not docs:
+        return "Customer not found.", 404
+
+    doc_ref = docs[0].reference
+    customer = docs[0].to_dict()
+    current_points = customer.get("points", 0)
+
+    if points > current_points:
+        return "Not enough points.", 400
+
+    doc_ref.update({"points": current_points - points})
+
+    return f"✅ Redeemed {points} points."
+
 @app.route('/admin-add-punch', methods=['POST'])
 def admin_add_punch():
     phone = request.form.get("phone")
@@ -229,6 +253,11 @@ def barista_login():
             return redirect("/barista")
         return render_template("barista-login.html", error="Incorrect password")
     return render_template("barista-login.html")
+
+@app.route('/logout')
+def logout():
+    session.pop('barista_authenticated', None)
+    return redirect('/')
 
 @app.route('/barista', methods=['GET', 'POST'])
 def barista():
