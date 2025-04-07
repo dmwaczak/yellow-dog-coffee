@@ -5,3 +5,4 @@ gunicorn
 twilio 
 qrcode
 pillow
+python-dotenv
