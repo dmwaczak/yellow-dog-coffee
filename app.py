@@ -4,11 +4,16 @@ import re
 import base64
 import random
 import string
+import smtplib
 from io import BytesIO
+from email.mime.text import MIMEText
 from flask import Flask, render_template, request, jsonify, redirect, session
+from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, firestore
 import qrcode
+
+load_dotenv()
 
 app = Flask(__name__, template_folder="templates")
 app.secret_key = os.getenv("SECRET_KEY", "defaultsecret")
@@ -22,6 +27,36 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
+
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASS = os.getenv("EMAIL_PASS")
+
+def send_welcome_email(to_address, name):
+    subject = "Welcome to Yellow Dog Rewards 🐾"
+    body = f"""
+    Hi {name},
+
+    Thanks for signing up for Yellow Dog Coffee Rewards!
+    You're now earning punches and points with every visit.
+
+    Next time you're in the shop, just let a barista know you're a rewards member.
+    You can check your status anytime at: https://yourwebsite.com/status-check
+
+    Stay pawsitive ☕🐾,
+    Yellow Dog Coffee
+    """
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = EMAIL_USER
+    msg['To'] = to_address
+
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(EMAIL_USER, EMAIL_PASS)
+            smtp.send_message(msg)
+            print(f"✅ Sent welcome email to {to_address}")
+    except Exception as e:
+        print(f"❌ Failed to send email: {e}")
 
 def clean_phone_number(phone):
     cleaned = re.sub(r'\D', '', phone)
@@ -67,6 +102,8 @@ def submit():
             "points": 0,
             "punches": 0
         })
+
+        send_welcome_email(email, first_name)
 
         return jsonify({"redirect": f"/thankyou?name={first_name}"}), 200
 
