@@ -117,6 +117,14 @@
     .reward-item button:hover {
       background-color: #4ade80;
     }
+
+    .checkout-summary {
+      margin-top: 20px;
+      background-color: #e0f2fe;
+      border: 2px solid #38bdf8;
+      padding: 15px;
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body>
@@ -130,6 +138,11 @@
       <input type="number" id="amount" placeholder="Amount Spent ($)" step="0.01">
       <button onclick="logPurchase()">Add Purchase</button>
       <button onclick="resetPanel()">Reset for Next Customer</button>
+
+      <div class="checkout-summary" id="checkout-summary">
+        <strong>🧾 Current Order Summary:</strong>
+        <ul id="summary-list"></ul>
+      </div>
     </div>
 
     <div class="info-section">
@@ -147,12 +160,23 @@
 
   <script>
     let currentPhone = '';
+    let summaryItems = [];
 
     const rewards = [
       { name: "🥪 Free Toast", points: 100 },
       { name: "🧊 Cold Brew", points: 250 },
       { name: "☕ Yellow Dog Mug", points: 500 }
     ];
+
+    function updateSummaryDisplay() {
+      const list = document.getElementById('summary-list');
+      list.innerHTML = '';
+      summaryItems.forEach(item => {
+        const li = document.createElement('li');
+        li.innerText = item;
+        list.appendChild(li);
+      });
+    }
 
     async function lookupCustomer() {
       const phone = document.getElementById('phone').value;
@@ -213,7 +237,7 @@
           section.innerHTML += `
             <div class="reward-item">
               <span>${reward.name} (Requires ${reward.points} points)</span>
-              <button onclick="redeemPoints(${reward.points})">Redeem</button>
+              <button onclick="redeemPoints(${reward.points}, '${reward.name}')">Redeem</button>
             </div>
           `;
         } else {
@@ -227,7 +251,7 @@
       });
     }
 
-    async function redeemPoints(pointsToDeduct) {
+    async function redeemPoints(pointsToDeduct, rewardName) {
       const msg = document.getElementById('message');
       try {
         const res = await fetch('/redeem-points', {
@@ -238,6 +262,8 @@
 
         const result = await res.text();
         msg.innerText = result;
+        summaryItems.push(`Redeemed: ${rewardName}`);
+        updateSummaryDisplay();
         await lookupCustomer();
       } catch (err) {
         msg.innerText = 'Could not redeem points.';
@@ -264,6 +290,8 @@
 
         const result = await response.json();
         msg.innerText = response.ok ? result.message : result.error;
+        summaryItems.push(`+${coffees} Coffee(s), $${amount}`);
+        updateSummaryDisplay();
         await lookupCustomer();
       } catch (err) {
         msg.innerText = 'Something went wrong.';
@@ -281,6 +309,8 @@
 
         const result = await response.text();
         msg.innerText = result;
+        summaryItems.push('Redeemed: Free Coffee');
+        updateSummaryDisplay();
         lookupCustomer();
       } catch (err) {
         msg.innerText = 'Redemption failed. Please try again.';
@@ -298,6 +328,8 @@
       document.getElementById('rewards-section').innerHTML = '';
       document.getElementById('customer-info').classList.add('hidden');
       document.getElementById('message').innerText = '';
+      summaryItems = [];
+      updateSummaryDisplay();
     }
   </script>
 </body>
