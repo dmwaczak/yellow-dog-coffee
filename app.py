@@ -1,4 +1,3 @@
-
 import os
 import uuid
 import re
@@ -96,7 +95,7 @@ def status():
         punches = customer.get("punches", 0)
         points = customer.get("points", 0)
 
-        return render_template("status.html", name=name, punches=punches, points=points)
+        return render_template("status.html", name=name, punches=punches, points=points, phone=cleaned_phone)
 
     return render_template("status_check.html")
 
