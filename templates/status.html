@@ -93,8 +93,7 @@
     </div>
 
     {% if punches >= 12 %}
-      <p>🎉 You’ve earned a free coffee!</p>
-      <a href="/redeem-qr/{{ phone }}" class="btn">Redeem Now</a>
+      <p>🎉 You’ve earned a free coffee! Just let your barista know when you order.</p>
     {% else %}
       <p>{{ 12 - punches }} more punches until your next free coffee!</p>
     {% endif %}
