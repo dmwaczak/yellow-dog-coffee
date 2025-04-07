@@ -100,6 +100,7 @@
       <input type="number" id="coffees" placeholder="Number of Coffees" min="1">
       <input type="number" id="amount" placeholder="Amount Spent ($)" step="0.01">
       <button onclick="logPurchase()">Add Purchase</button>
+      <button onclick="resetPanel()">Reset for Next Customer</button>
     </div>
 
     <div class="info-section">
@@ -183,6 +184,7 @@
 
         const result = await response.json();
         msg.innerText = response.ok ? result.message : result.error;
+        await lookupCustomer(); // Auto-refresh the info panel
       } catch (err) {
         msg.innerText = 'Something went wrong.';
       }
@@ -203,6 +205,18 @@
       } catch (err) {
         msg.innerText = 'Redemption failed. Please try again.';
       }
+    }
+
+    function resetPanel() {
+      document.getElementById('phone').value = '';
+      document.getElementById('coffees').value = '';
+      document.getElementById('amount').value = '';
+      document.getElementById('cust-name').innerText = '';
+      document.getElementById('cust-punches').innerText = '';
+      document.getElementById('cust-points').innerText = '';
+      document.getElementById('free-coffee-box').innerHTML = '';
+      document.getElementById('customer-info').classList.add('hidden');
+      document.getElementById('message').innerText = '';
     }
   </script>
 </body>
