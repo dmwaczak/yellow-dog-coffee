@@ -1,4 +1,4 @@
-<!-- COMPLETE UPDATED barista.html -->
+<!-- FINALIZED barista.html with security + reset fixes -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -168,9 +168,9 @@
         order.summary.push({ text: `☕ ${coffees} coffee(s)`, type: 'coffee', value: coffees });
         order.coffees += coffees;
       }
+
       if (amount > 0) {
-        order.summary.push({ text: `💰 $${amount.toFixed(2)}`, type: 'amount', value: amount });
-        order.amount += amount;
+        order.amount += amount; // Only update total, don't add to summary list
       }
 
       renderSummary();
@@ -180,15 +180,17 @@
       const summaryList = document.getElementById('summary-list');
       summaryList.innerHTML = '';
       order.summary.forEach((item, index) => {
-        const li = document.createElement('li');
-        li.innerHTML = `${item.text} <button class="remove-btn" onclick="removeFromSummary(${index})">Remove</button>`;
-        summaryList.appendChild(li);
+        if (item.type !== 'amount') {
+          const li = document.createElement('li');
+          li.innerHTML = `${item.text} <button class="remove-btn" onclick="removeFromSummary(${index})">Remove</button>`;
+          summaryList.appendChild(li);
+        }
       });
 
       const totalsDiv = document.getElementById('order-totals');
       totalsDiv.innerHTML = `
         Coffees: ${order.coffees} | 
-        $${order.amount.toFixed(2)} | 
+        Total: $${order.amount.toFixed(2)} | 
         Redemptions: ${order.redemptions.length}
       `;
     }
@@ -196,7 +198,6 @@
     function removeFromSummary(index) {
       const item = order.summary[index];
       if (item.type === 'coffee') order.coffees -= item.value;
-      else if (item.type === 'amount') order.amount -= item.value;
       else if (item.type === 'redeem') {
         order.redemptions = order.redemptions.filter(r => r.key !== item.key);
       }
@@ -206,7 +207,7 @@
 
     async function payOrder() {
       const msg = document.getElementById('message');
-      if (!currentPhone || order.summary.length === 0) {
+      if (!currentPhone || (order.coffees === 0 && order.amount === 0 && order.redemptions.length === 0)) {
         msg.innerText = 'Missing customer or order details';
         return;
       }
@@ -236,7 +237,7 @@
         order = { coffees: 0, amount: 0, summary: [], redemptions: [] };
         document.getElementById('summary-list').innerHTML = '';
         document.getElementById('order-totals').innerText = '';
-        await lookupCustomer(); // Refresh customer info panel
+        await lookupCustomer(); // Keep panel open and refresh
       } catch (e) {
         msg.innerText = 'Transaction failed';
       }
@@ -270,14 +271,9 @@
           document.getElementById('cust-points').innerText = customerData.points;
 
           const box = document.getElementById('free-coffee-box');
-          if (customerData.punches >= 12) {
-            box.innerHTML = `
-              <p style="color:green;">🎉 Eligible for free coffee!</p>
-              <button onclick="addFreeCoffee()">Redeem Coffee</button>
-            `;
-          } else {
-            box.innerHTML = `<p>${12 - customerData.punches} more until a free coffee</p>`;
-          }
+          box.innerHTML = customerData.punches >= 12
+            ? `<p style="color:green;">🎉 Eligible for free coffee!</p><button onclick="addFreeCoffee()">Redeem Coffee</button>`
+            : `<p>${12 - customerData.punches} more until a free coffee</p>`;
 
           const rewardsDiv = document.getElementById('rewards-section');
           rewardsDiv.innerHTML = '<h4>🎁 Rewards:</h4>';
@@ -287,10 +283,9 @@
             { name: '☕ Mug', cost: 500 }
           ];
           rewards.forEach(reward => {
-            rewardsDiv.innerHTML += customerData.points >= reward.cost ?
-              `<div class='reward-item'><span>${reward.name} - ${reward.cost} pts</span>
-              <button onclick="addPointReward(${reward.cost}, '${reward.name}')">Redeem</button></div>` :
-              `<div class='reward-item'><span>${reward.name} - Need ${reward.cost - customerData.points} more pts</span></div>`;
+            rewardsDiv.innerHTML += customerData.points >= reward.cost
+              ? `<div class='reward-item'><span>${reward.name} - ${reward.cost} pts</span><button onclick="addPointReward(${reward.cost}, '${reward.name}')">Redeem</button></div>`
+              : `<div class='reward-item'><span>${reward.name} - Need ${reward.cost - customerData.points} more pts</span></div>`;
           });
 
           document.getElementById('customer-info').classList.remove('hidden');
@@ -331,8 +326,8 @@
       order = { coffees: 0, amount: 0, summary: [], redemptions: [] };
       document.getElementById('phone').value = '';
       document.getElementById('cust-name').innerText = '';
-      document.getElementById('cust-punches').innerText = '';
-      document.getElementById('cust-points').innerText = '';
+      document.getElementById('cust-punches').innerText = '0';
+      document.getElementById('cust-points').innerText = '0';
       document.getElementById('free-coffee-box').innerHTML = '';
       document.getElementById('rewards-section').innerHTML = '';
       document.getElementById('customer-info').classList.add('hidden');
