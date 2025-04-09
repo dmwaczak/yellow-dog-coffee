@@ -1,4 +1,4 @@
-<!-- FINALIZED barista.html with security + reset fixes -->
+<!-- FINALIZED barista.html with smart remove logic and full functionality -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -165,12 +165,16 @@
       const amount = parseFloat(document.getElementById('amount').value) || 0;
 
       if (coffees > 0) {
-        order.summary.push({ text: `☕ ${coffees} coffee(s)`, type: 'coffee', value: coffees });
+        order.summary.push({ 
+          text: `☕ ${coffees} coffee(s)`, 
+          type: 'coffee', 
+          value: coffees, 
+          associatedAmount: amount > 0 ? amount : 0 
+        });
         order.coffees += coffees;
-      }
-
-      if (amount > 0) {
-        order.amount += amount; // Only update total, don't add to summary list
+        order.amount += amount;
+      } else if (amount > 0) {
+        order.amount += amount;
       }
 
       renderSummary();
@@ -197,8 +201,12 @@
 
     function removeFromSummary(index) {
       const item = order.summary[index];
-      if (item.type === 'coffee') order.coffees -= item.value;
-      else if (item.type === 'redeem') {
+      if (item.type === 'coffee') {
+        order.coffees -= item.value;
+        if (item.associatedAmount) {
+          order.amount -= item.associatedAmount;
+        }
+      } else if (item.type === 'redeem') {
         order.redemptions = order.redemptions.filter(r => r.key !== item.key);
       }
       order.summary.splice(index, 1);
@@ -237,7 +245,7 @@
         order = { coffees: 0, amount: 0, summary: [], redemptions: [] };
         document.getElementById('summary-list').innerHTML = '';
         document.getElementById('order-totals').innerText = '';
-        await lookupCustomer(); // Keep panel open and refresh
+        await lookupCustomer();
       } catch (e) {
         msg.innerText = 'Transaction failed';
       }
