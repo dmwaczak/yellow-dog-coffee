@@ -62,8 +62,11 @@
       margin-top: 20px;
     }
     .checkout-summary ul {
-      list-style-type: disc;
-      padding-left: 20px;
+      list-style-type: none;
+      padding-left: 0;
+    }
+    .checkout-summary li {
+      margin-bottom: 8px;
     }
     .info-box {
       background-color: #fff9db;
@@ -90,6 +93,15 @@
     }
     .reward-item button:hover {
       background-color: #4ade80;
+    }
+    .remove-btn {
+      margin-left: 10px;
+      background-color: #f87171;
+      font-size: 14px;
+      padding: 4px 8px;
+    }
+    .remove-btn:hover {
+      background-color: #ef4444;
     }
     .hidden {
       display: none;
@@ -132,7 +144,85 @@
   <script>
     let currentPhone = '';
     let customerData = {};
-    let order = { coffees: 0, amount: 0, summary: [] };
+    let order = {
+      coffees: 0,
+      amount: 0,
+      summary: [],
+      redemptions: []
+    };
+
+    function addToSummary() {
+      const coffees = parseInt(document.getElementById('coffees').value) || 0;
+      const amount = parseFloat(document.getElementById('amount').value) || 0;
+
+      if (coffees > 0) {
+        order.summary.push({ text: `☕ ${coffees} coffee(s)`, type: 'coffee', value: coffees });
+        order.coffees += coffees;
+      }
+      if (amount > 0) {
+        order.summary.push({ text: `💰 $${amount.toFixed(2)}`, type: 'amount', value: amount });
+        order.amount += amount;
+      }
+
+      renderSummary();
+    }
+
+    function renderSummary() {
+      const summaryList = document.getElementById('summary-list');
+      summaryList.innerHTML = '';
+      order.summary.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `${item.text} <button class="remove-btn" onclick="removeFromSummary(${index})">Remove</button>`;
+        summaryList.appendChild(li);
+      });
+    }
+
+    function removeFromSummary(index) {
+      const item = order.summary[index];
+      if (item.type === 'coffee') order.coffees -= item.value;
+      else if (item.type === 'amount') order.amount -= item.value;
+      else if (item.type === 'redeem') {
+        order.redemptions = order.redemptions.filter(r => r.key !== item.key);
+      }
+      order.summary.splice(index, 1);
+      renderSummary();
+    }
+
+    async function payOrder() {
+      const msg = document.getElementById('message');
+      if (!currentPhone || order.summary.length === 0) {
+        msg.innerText = 'Missing customer or order details';
+        return;
+      }
+
+      try {
+        const res = await fetch('/barista', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: currentPhone,
+            coffees: order.coffees,
+            amount: order.amount
+          })
+        });
+
+        const result = await res.json();
+        msg.innerText = res.ok ? result.message : result.error;
+
+        // Now handle redemptions
+        for (const r of order.redemptions) {
+          await fetch(r.endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: r.data
+          });
+        }
+
+        resetPanel();
+      } catch (e) {
+        msg.innerText = 'Transaction failed';
+      }
+    }
 
     async function lookupCustomer() {
       const phone = document.getElementById('phone').value;
@@ -165,7 +255,7 @@
           if (customerData.punches >= 12) {
             box.innerHTML = `
               <p style="color:green;">🎉 Eligible for free coffee!</p>
-              <button onclick="redeemCoffee()">Redeem Coffee</button>
+              <button onclick="addFreeCoffee()">Redeem Coffee</button>
             `;
           } else {
             box.innerHTML = `<p>${12 - customerData.punches} more until a free coffee</p>`;
@@ -181,7 +271,7 @@
           rewards.forEach(reward => {
             rewardsDiv.innerHTML += customerData.points >= reward.cost ?
               `<div class='reward-item'><span>${reward.name} - ${reward.cost} pts</span>
-              <button onclick="redeemPoints(${reward.cost}, '${reward.name}')">Redeem</button></div>` :
+              <button onclick="addPointReward(${reward.cost}, '${reward.name}')">Redeem</button></div>` :
               `<div class='reward-item'><span>${reward.name} - Need ${reward.cost - customerData.points} more pts</span></div>`;
           });
 
@@ -195,85 +285,32 @@
       }
     }
 
-    function addToSummary() {
-      const coffees = parseInt(document.getElementById('coffees').value) || 0;
-      const amount = parseFloat(document.getElementById('amount').value) || 0;
-
-      if (coffees > 0) order.summary.push(`☕ ${coffees} coffee(s)`);
-      if (amount > 0) order.summary.push(`💰 $${amount.toFixed(2)}`);
-
-      order.coffees += coffees;
-      order.amount += amount;
-
-      const summaryList = document.getElementById('summary-list');
-      summaryList.innerHTML = '';
-      order.summary.forEach(item => {
-        const li = document.createElement('li');
-        li.innerText = item;
-        summaryList.appendChild(li);
+    function addPointReward(points, name) {
+      const key = `reward-${name}-${Date.now()}`;
+      order.redemptions.push({
+        key,
+        endpoint: '/redeem-points',
+        data: `phone=${currentPhone}&points=${points}`
       });
+      order.summary.push({ text: `🎁 ${name}`, type: 'redeem', key });
+      renderSummary();
     }
 
-    async function payOrder() {
-      const msg = document.getElementById('message');
-      if (!currentPhone || (order.coffees === 0 && order.amount === 0)) {
-        msg.innerText = 'Missing customer or order details';
-        return;
-      }
-
-      try {
-        const res = await fetch('/barista', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: currentPhone, coffees: order.coffees, amount: order.amount })
-        });
-        const result = await res.json();
-        msg.innerText = res.ok ? result.message : result.error;
-        lookupCustomer();
-        order = { coffees: 0, amount: 0, summary: [] };
-        document.getElementById('summary-list').innerHTML = '';
-      } catch (e) {
-        msg.innerText = 'Transaction failed';
-      }
-    }
-
-    async function redeemPoints(points, name) {
-      const msg = document.getElementById('message');
-      try {
-        const res = await fetch('/redeem-points', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `phone=${currentPhone}&points=${points}`
-        });
-        const result = await res.text();
-        msg.innerText = result;
-        order.summary.push(`🎁 ${name}`);
-        payOrder();
-      } catch (e) {
-        msg.innerText = 'Failed to redeem reward';
-      }
-    }
-
-    async function redeemCoffee() {
-      const msg = document.getElementById('message');
-      try {
-        const res = await fetch('/redeem-coffee', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `phone=${currentPhone}`
-        });
-        const result = await res.text();
-        msg.innerText = result;
-        lookupCustomer();
-      } catch (e) {
-        msg.innerText = 'Failed to redeem coffee';
-      }
+    function addFreeCoffee() {
+      const key = `coffee-${Date.now()}`;
+      order.redemptions.push({
+        key,
+        endpoint: '/redeem-coffee',
+        data: `phone=${currentPhone}`
+      });
+      order.summary.push({ text: `🎉 Free Coffee Redeemed`, type: 'redeem', key });
+      renderSummary();
     }
 
     function resetPanel() {
       currentPhone = '';
       customerData = {};
-      order = { coffees: 0, amount: 0, summary: [] };
+      order = { coffees: 0, amount: 0, summary: [], redemptions: [] };
       document.getElementById('phone').value = '';
       document.getElementById('cust-name').innerText = '';
       document.getElementById('cust-punches').innerText = '';
