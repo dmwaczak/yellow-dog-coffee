@@ -1,10 +1,11 @@
+<!-- COMPLETE UPDATED barista.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Barista Panel</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500&display=swap" rel="stylesheet"/>
   <style>
     body {
       font-family: 'Montserrat', sans-serif;
@@ -68,6 +69,11 @@
     .checkout-summary li {
       margin-bottom: 8px;
     }
+    .order-totals {
+      margin-top: 10px;
+      font-size: 15px;
+      font-weight: bold;
+    }
     .info-box {
       background-color: #fff9db;
       border-left: 6px solid #facc15;
@@ -122,11 +128,14 @@
       <input type="number" id="coffees" placeholder="Number of Coffees" min="1">
       <input type="number" id="amount" placeholder="Amount Spent ($)" step="0.01">
       <button onclick="addToSummary()">Add to Order</button>
+
       <div class="checkout-summary">
         <strong>🧾 Order Summary:</strong>
         <ul id="summary-list"></ul>
+        <div class="order-totals" id="order-totals"></div>
         <button onclick="payOrder()">Pay Order</button>
       </div>
+
       <button onclick="resetPanel()">Reset for Next Customer</button>
     </div>
     <div class="info-section">
@@ -175,6 +184,13 @@
         li.innerHTML = `${item.text} <button class="remove-btn" onclick="removeFromSummary(${index})">Remove</button>`;
         summaryList.appendChild(li);
       });
+
+      const totalsDiv = document.getElementById('order-totals');
+      totalsDiv.innerHTML = `
+        Coffees: ${order.coffees} | 
+        $${order.amount.toFixed(2)} | 
+        Redemptions: ${order.redemptions.length}
+      `;
     }
 
     function removeFromSummary(index) {
@@ -209,7 +225,6 @@
         const result = await res.json();
         msg.innerText = res.ok ? result.message : result.error;
 
-        // Now handle redemptions
         for (const r of order.redemptions) {
           await fetch(r.endpoint, {
             method: 'POST',
@@ -218,14 +233,17 @@
           });
         }
 
-        resetPanel();
+        order = { coffees: 0, amount: 0, summary: [], redemptions: [] };
+        document.getElementById('summary-list').innerHTML = '';
+        document.getElementById('order-totals').innerText = '';
+        await lookupCustomer(); // Refresh customer info panel
       } catch (e) {
         msg.innerText = 'Transaction failed';
       }
     }
 
     async function lookupCustomer() {
-      const phone = document.getElementById('phone').value;
+      const phone = currentPhone || document.getElementById('phone').value;
       const msg = document.getElementById('message');
       msg.innerText = 'Looking up customer...';
 
@@ -319,6 +337,7 @@
       document.getElementById('rewards-section').innerHTML = '';
       document.getElementById('customer-info').classList.add('hidden');
       document.getElementById('summary-list').innerHTML = '';
+      document.getElementById('order-totals').innerText = '';
       document.getElementById('message').innerText = '';
     }
   </script>
