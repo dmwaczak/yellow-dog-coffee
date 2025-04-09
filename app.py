@@ -20,7 +20,7 @@ app.secret_key = os.getenv("SECRET_KEY", "defaultsecret")
 
 firebase_creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "firebase_credentials.json")
 if not os.path.exists(firebase_creds_path):
-    print(f"\u26a0\ufe0f Firebase credentials not found at {firebase_creds_path}!")
+    print(f"⚠️ Firebase credentials not found at {firebase_creds_path}!")
     exit(1)
 if not firebase_admin._apps:
     cred = credentials.Certificate(firebase_creds_path)
@@ -32,7 +32,7 @@ EMAIL_USER = os.getenv("EMAIL_USER")
 EMAIL_PASS = os.getenv("EMAIL_PASS")
 
 def send_welcome_email(to_address, name):
-    subject = "Welcome to Yellow Dog Rewards \U0001f43e"
+    subject = "Welcome to Yellow Dog Rewards 🐾"
     body = f"""
     Hi {name},
 
@@ -42,7 +42,7 @@ def send_welcome_email(to_address, name):
     Next time you're in the shop, just let a barista know you're a rewards member.
     You can check your status anytime at: https://yellow-dog-coffee.onrender.com/
 
-    Stay pawsitive \u2615\U0001f43e,
+    Stay pawsitive ☕🐾,
     Yellow Dog Coffee
     """
     msg = MIMEText(body)
@@ -54,9 +54,9 @@ def send_welcome_email(to_address, name):
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(EMAIL_USER, EMAIL_PASS)
             smtp.send_message(msg)
-            print(f"\u2705 Sent welcome email to {to_address}")
+            print(f"✅ Sent welcome email to {to_address}")
     except Exception as e:
-        print(f"\u274c Failed to send email: {e}")
+        print(f"❌ Failed to send email: {e}")
 
 def clean_phone_number(phone):
     cleaned = re.sub(r'\D', '', phone)
@@ -196,7 +196,26 @@ def redeem_check():
     doc_ref = docs[0].reference
     doc_ref.update({"punches": 0})
 
-    return "\u2705 Coffee redeemed. Punches reset."
+    return "✅ Coffee redeemed. Punches reset."
+
+@app.route('/redeem-coffee', methods=['POST'])
+def redeem_coffee():
+    phone = request.form.get("phone")
+    cleaned_phone = clean_phone_number(phone)
+    if not cleaned_phone:
+        return "Invalid phone.", 400
+
+    docs = db.collection("customers").where("phone", "==", cleaned_phone).get()
+    if not docs:
+        return "Customer not found.", 404
+
+    doc_ref = docs[0].reference
+    customer = docs[0].to_dict()
+    if customer.get("punches", 0) >= 12:
+        doc_ref.update({"punches": 0})
+        return "✅ Free coffee redeemed! Punches reset."
+    else:
+        return "Not enough punches to redeem.", 400
 
 @app.route('/redeem-points', methods=['POST'])
 def redeem_points():
@@ -220,7 +239,7 @@ def redeem_points():
 
     doc_ref.update({"points": current_points - points})
 
-    return f"\u2705 Redeemed {points} points."
+    return f"✅ Redeemed {points} points."
 
 @app.route('/barista-login', methods=['GET', 'POST'])
 def barista_login():
